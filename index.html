@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <link rel="stylesheet" href="bootstrap-theme.css">
+    <style>
+        body{
+            overflow-x: hidden;
+        }
+        .item-move {
+            /* applied to the element when moving */
+            transition: transform .5s cubic-bezier(.55,0,.1,1);
+        }
+        .item-transition{
+            transition: transform .5s cubic-bezier(.55,0,.1,1);
+        }
+        .item-enter {
+            transform: translate(20px,10px) scale(1.2);
+        }
+        .item-leave {
+            transform: translateX(1500px) scale(0.7);
+            position: absolute;
+        }
+        .delete {
+            cursor: pointer;
+        }
+        tr {
+            transition: all .5s cubic-bezier(.55,0,.1,1);
+        }
+        tr[v-cloak]{
+            width: 0;
+        }
+        .del {
+            text-decoration: line-through;
+        }
+    </style>
+    <script src="vue.min.js"></script>
+    <script src="vue-animated-list.js"></script>
+</head>
+<body>
+<template id="table">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>action</th>
+                <th style="cursor: pointer;" @click="done">done</th>
+                <th>operate</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="todo in todos" transition="item" :class="{'success del': todo.complete}" v-cloak>
+                <td>{{$index+1}}</td>
+                <td contenteditable="true" style="outline: none" @keyup="edit($index,$event)">{{todo.action}}</td>
+                <td>
+                    <label class="c-input c-checkbox" v-on:click="show">
+                        <input type="checkbox" v-model="todo.complete">
+                        <span class="c-indicator"></span>
+                    </label>
+                </td>
+                <td class="delete"><a @click="delete($index)">删除</a></td>
+            </tr>
+        </tbody>
+    </table>
+</template>
+
+<template id="addItem">
+    <form class="form-horizontal">
+        <div class="form-group form-group-lg">
+            <label for="todoAction" class="control-label col-sm-2">添加要学习的内容</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control text-danger" id="todoAction" placeholder="努力学习吧骚年" v-model="addItem">
+            </div>
+        </div>
+        <button class="btn-block btn-lg btn-primary" @click="add" @keydown="enter">添加</button>
+    </form>
+</template>
+
+
+<div id="app" class="panel panel-primary">
+
+    <div class="panel-heading">
+        <h3>
+            Jaylen's Todo List  <span class="label label-warning">Incomplete <span class="badge">{{incomplete}}</span></span>
+        </h3>
+    </div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-xs-12">
+                <display :todos.sync="todos"></display>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <add :todos.sync="todos"></add>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    Vue.component('display', {
+        template: '#table',
+        props: {
+            todos: {
+                type: Array
+//              twoWay: true
+            }
+        },
+        methods: {
+            delete: function (index) {
+                this.todos.splice(index,1)
+            },
+            done: function () {
+                this.todos.forEach(function (item) {
+                    item.complete = !item.complete;
+                })
+            },
+            edit: function (index,e) {
+                this.todos[index].action = e.target.innerHTML.trim().replace('&nbsp;','');
+            }
+        }
+    });
+    Vue.component('add', {
+       template: '#addItem',
+        props: {
+            todos: {
+                type: Array
+//                twoWay: true
+            }
+        },
+        data: function () {
+            return {
+                addItem: ''
+            }
+        },
+        methods: {
+            add: function (e) {
+                e.preventDefault();
+                if(this.addItem.trim()){
+                    this.todos.push({
+                        action: this.addItem,
+                        complete: false
+                    });
+                    this.addItem = '';
+                    console.log(this.todos);
+                }
+            }
+        }
+    });
+    var vm = new Vue({
+        el: '#app',
+        data: {
+            todos: JSON.parse(localStorage.getItem('todos')||'[]')
+        },
+        computed: {
+            incomplete: function () {
+                return this.todos.filter(function (item) {
+                    return item.complete === false;
+                }).length
+            }
+        },
+        watch: {
+            'todos': {
+                handler: function (val, oldVal) {
+                    var data = JSON.stringify(val);
+                    localStorage.setItem('todos',data);
+                },
+                deep: true
+            }
+        }
+
+
+    });
+
+</script>
+</body>
+</html>
